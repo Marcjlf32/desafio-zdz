@@ -24,15 +24,15 @@ const { items: categorias } = storeToRefs(categoriasStore)
 const schema = z.object({
   nome: z.string().min(5, 'O nome deve ter no mínimo 5 caracteres.'),
   descricao: z.string().max(1000).nullable().optional(),
-  preco: z.number().min(0, 'O preço deve ser maior ou igual a zero.'),
-  categoriaId: z.number().int().positive('Selecione uma categoria.')
+  preco: z.number({ invalid_type_error: 'Informe o preço.' }).min(0, 'O preço deve ser maior ou igual a zero.'),
+  categoriaId: z.number({ invalid_type_error: 'Selecione uma categoria.' }).int().positive('Selecione uma categoria.')
 })
 
 const form = reactive({
   nome: '',
   descricao: '' as string | null,
-  preco: 0,
-  categoriaId: 0
+  preco: null as number | null,
+  categoriaId: null as number | null
 })
 
 const errors = reactive<Record<string, string | undefined>>({})
@@ -49,21 +49,20 @@ watch(() => props.modelValue, async (open) => {
     }
     form.nome = props.produto?.nome ?? ''
     form.descricao = props.produto?.descricao ?? ''
-    form.preco = props.produto?.preco ?? 0
-    form.categoriaId = props.produto?.categoriaId ?? 0
+    form.preco = props.produto?.preco ?? null
+    form.categoriaId = props.produto?.categoriaId ?? null
     Object.keys(errors).forEach(k => { errors[k] = undefined })
   }
 })
 
 const close = () => emit('update:modelValue', false)
 
-const persist = () => {
-  const payload = {
-    nome: form.nome,
-    descricao: form.descricao,
-    preco: form.preco,
-    categoriaId: form.categoriaId
-  }
+const persist = (payload: {
+  nome: string
+  descricao: string | null | undefined
+  preco: number
+  categoriaId: number
+}) => {
   if (isEdit.value && props.produto) {
     return produtosStore.update(props.produto.id, payload)
   }
@@ -83,7 +82,7 @@ const save = async () => {
 
   saving.value = true
   try {
-    await persist()
+    await persist(result.data)
     emit('saved')
     close()
   } catch {
