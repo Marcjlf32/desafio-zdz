@@ -185,6 +185,20 @@ Ou use o script auxiliar que já aplica esses overrides:
 .\scripts\dev-local.ps1 tests   # roda testes contra DB em :5433
 ```
 
+### Erro "Vite Node IPC socket path not configured"
+
+Em algumas combinações Windows + PowerShell + Node 22, o dev server do Nuxt pode falhar com esse erro ao acessar uma rota. É um problema conhecido de IPC entre processos no Windows.
+
+**Workaround**: gerar build estático e servir como SPA. Funcionalmente idêntico, sem dev hot reload:
+
+```powershell
+cd frontend
+npm run generate
+npx serve .output/public -l 3000
+```
+
+Acesse normalmente em `http://localhost:3000`. Todas as funcionalidades funcionam — apenas perde hot reload (que não é necessário para avaliar o app rodando).
+
 ## Decisões Arquiteturais
 
 Ver `docs/decisions.md` para ADRs completos. Resumo:
