@@ -1,0 +1,312 @@
+openapi: 3.1.0
+info:
+  title: Catalog API
+  version: 1.0.0
+  description: |
+    API RESTful para gestao de Produtos e Categorias do desafio tecnico ZDZCode/ZDZCloud.
+    Implementa CRUD completo com integridade referencial, validacao de payload e CORS explicito.
+  license:
+    name: MIT
+servers:
+  - url: http://localhost:5000
+    description: Local development
+
+tags:
+  - name: Categorias
+    description: Gestao de categorias do catalogo
+  - name: Produtos
+    description: Gestao de produtos vinculados a categorias
+
+paths:
+  /api/categorias:
+    get:
+      tags: [Categorias]
+      summary: Lista todas as categorias
+      operationId: listCategorias
+      responses:
+        "200":
+          description: Lista de categorias
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategoriaDto"
+    post:
+      tags: [Categorias]
+      summary: Cria uma nova categoria
+      operationId: createCategoria
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCategoriaDto"
+      responses:
+        "201":
+          description: Categoria criada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoriaDto"
+        "400":
+          $ref: "#/components/responses/ValidationProblem"
+
+  /api/categorias/{id}:
+    put:
+      tags: [Categorias]
+      summary: Atualiza uma categoria existente
+      operationId: updateCategoria
+      parameters:
+        - $ref: "#/components/parameters/IdPathParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCategoriaDto"
+      responses:
+        "204":
+          description: Atualizado com sucesso
+        "400":
+          $ref: "#/components/responses/ValidationProblem"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Categorias]
+      summary: Exclui uma categoria
+      operationId: deleteCategoria
+      parameters:
+        - $ref: "#/components/parameters/IdPathParam"
+      responses:
+        "204":
+          description: Excluido com sucesso
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Categoria possui produtos vinculados
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+              example:
+                type: "https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.8"
+                title: "Conflict"
+                status: 409
+                detail: "Não é possível excluir uma categoria que possua produtos vinculados."
+
+  /api/produtos:
+    get:
+      tags: [Produtos]
+      summary: Lista todos os produtos com categoria aninhada
+      operationId: listProdutos
+      responses:
+        "200":
+          description: Lista de produtos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProdutoDto"
+    post:
+      tags: [Produtos]
+      summary: Cria um novo produto
+      operationId: createProduto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProdutoDto"
+      responses:
+        "201":
+          description: Produto criado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProdutoDto"
+        "400":
+          $ref: "#/components/responses/ValidationProblem"
+
+  /api/produtos/{id}:
+    put:
+      tags: [Produtos]
+      summary: Atualiza um produto existente
+      operationId: updateProduto
+      parameters:
+        - $ref: "#/components/parameters/IdPathParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProdutoDto"
+      responses:
+        "204":
+          description: Atualizado com sucesso
+        "400":
+          $ref: "#/components/responses/ValidationProblem"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Produtos]
+      summary: Exclui um produto
+      operationId: deleteProduto
+      parameters:
+        - $ref: "#/components/parameters/IdPathParam"
+      responses:
+        "204":
+          description: Excluido com sucesso
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  parameters:
+    IdPathParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+
+  responses:
+    ValidationProblem:
+      description: Erro de validacao no payload
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ValidationProblemDetails"
+    NotFound:
+      description: Recurso nao encontrado
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+
+  schemas:
+    CategoriaDto:
+      type: object
+      required: [id, nome]
+      properties:
+        id:
+          type: integer
+          example: 1
+        nome:
+          type: string
+          example: "Eletronicos"
+        descricao:
+          type: ["string", "null"]
+          example: "Produtos eletronicos diversos"
+
+    CreateCategoriaDto:
+      type: object
+      required: [nome]
+      properties:
+        nome:
+          type: string
+          minLength: 5
+          maxLength: 200
+          example: "Eletronicos"
+        descricao:
+          type: ["string", "null"]
+          maxLength: 1000
+
+    UpdateCategoriaDto:
+      type: object
+      required: [nome]
+      properties:
+        nome:
+          type: string
+          minLength: 5
+          maxLength: 200
+        descricao:
+          type: ["string", "null"]
+          maxLength: 1000
+
+    ProdutoDto:
+      type: object
+      required: [id, nome, preco, categoriaId, categoria]
+      properties:
+        id:
+          type: integer
+        nome:
+          type: string
+        descricao:
+          type: ["string", "null"]
+        preco:
+          type: number
+          format: double
+          minimum: 0
+        categoriaId:
+          type: integer
+        categoria:
+          $ref: "#/components/schemas/CategoriaDto"
+
+    CreateProdutoDto:
+      type: object
+      required: [nome, preco, categoriaId]
+      properties:
+        nome:
+          type: string
+          minLength: 5
+          maxLength: 200
+        descricao:
+          type: ["string", "null"]
+          maxLength: 1000
+        preco:
+          type: number
+          format: double
+          minimum: 0
+        categoriaId:
+          type: integer
+          minimum: 1
+
+    UpdateProdutoDto:
+      type: object
+      required: [nome, preco, categoriaId]
+      properties:
+        nome:
+          type: string
+          minLength: 5
+          maxLength: 200
+        descricao:
+          type: ["string", "null"]
+          maxLength: 1000
+        preco:
+          type: number
+          format: double
+          minimum: 0
+        categoriaId:
+          type: integer
+          minimum: 1
+
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+
+    ValidationProblemDetails:
+      allOf:
+        - $ref: "#/components/schemas/ProblemDetails"
+        - type: object
+          properties:
+            errors:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
+              example:
+                nome: ["O nome deve ter no mínimo 5 caracteres."]
